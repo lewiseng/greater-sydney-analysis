@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Greater Sydney Resource Allocation Analysis</title>
+<style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 900px;
+      margin: auto;
+      padding: 1rem;
+      line-height: 1.6;
+    }
+    h3 {
+      margin-top: 2em;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 0.3em;
+    }
+    blockquote {
+      background: #f9f9f9;
+      padding: 1em;
+      border-left: 5px solid #ccc;
+    }
+    blockquote cite {
+      display: block;
+      margin-top: 0.5em;
+      font-style: italic;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1em;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+      text-align: center;
+      padding: 0.5em;
+    }
+    iframe {
+      max-width: 100%;
+      border: none;
+    }
+    .center {
+      text-align: center;
+    }
+  
+section, h3, p, figure, table {
+  margin-top: 2rem;
+}
+h3 {
+  margin-bottom: 1rem;
+}
+p {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+figcaption {
+  font-style: italic;
+  font-size: 0.95em;
+  margin-top: 0.5em;
+  text-align: center;
+}
+</style>
+<script>
+    MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['$$', '$$']]
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+  </script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<h1>Reo-Spatial Quantification of Regional Resource Distribution in Greater Sydney</h1>
+<h2>A Multi-Metric SA2-Level Evaluation</h2>
+<figure class="wp-block-pullquote has-text-align-left"><blockquote><p style="margin-bottom: 0;">This report investigates the spatial distribution of resources across SA2 regions within Greater Sydney through the construction of a multi-metric scoring system. The scoring framework aggregates standardized z-scores across eight categories—including business activity, healthcare access, education infrastructure, public transport availability, polling locations, homelessness rates, emergency services, and government expenditure—normalized through a sigmoid function to ensure comparability. By incorporating both spatial and per-capita metrics, the approach captures not only the quantity but also the accessibility of resources within each region. Notably, the analysis reveals a consistent positive correlation between the composite resource score and median income, validating the score as a proxy for regional well-resourcing. The findings highlight spatial inequities, identify areas of under- or over-investment, and offer a data-driven lens for evaluating future policy and planning decisions. The source code can be found <a href="https://github.com/lewiseng/greater-sydney-analysis/blob/main/Notebook.ipynb" rel="noreferrer noopener" target="_blank">here</a>. <br/><br/>Authors: Lewis Chao, Jake Laherty, Gabriel Timothy <br/>Technologies: Python (GeoPandas, Shapely, Matplotlib), SQL</p></blockquote></figure>
+<h3 class="wp-block-heading">Introduction </h3>
+<p class="initial-letter has-medium-font-size" style="padding-top:0;padding-right:0;padding-bottom:0;padding-left:0;text-transform:none">Australia is formally defined by more than 2000 ”Statistical Area Level 2” (SA2) distinct geographical regions, designed to represent communities of between 3000-25000 people that "interact together socially and economically”. This report presents an analysis of various datasets that collectively evaluate the resource distribution and well-being across different Statistical Area Level 2 (SA2) regions within the Greater Sydney area. The report utilizes 10 distinct datasets, combining spatial and non-spatial data, to create a holistic picture of resource allocation, encompassing factors such as businesses, public transport, healthcare facilities, income, population, and more. The report employs a score-based approach to quantify and compare the level of resources within each SA2 region, shedding light on the diverse factors contributing to the overall well-resourcing of different areas.</p>
+<h3 class="wp-block-heading" style="padding-top:0;padding-right:0;padding-bottom:0;padding-left:0">Dataset </h3>
+<p>This project makes use of 10 datasets. Seven of them were given alongside the assignment and three were sourced online. Below is a short description of each dataset and a summary of the data-cleaning steps undertaken.</p>
+<p>The<strong> SA2 Regions</strong> dataset is obtained from the Australian Bureau of Statistics, containing the geometric boundaries, and descriptions, of Statistical Area Level 2 regions. For importing, the dataset was limited to regions in the "Greater Sydney" area and with defined boundaries. These boundary geometries were converted to Well-Known Text for use with PostGIS, and the SA2 code and name fields were also extracted.</p>
+<p>The<strong> Businesses</strong> dataset is sourced from the Australian Bureau of Statistics, recording the number of businesses of different sizes, in different industries, in each SA2 region. Little cleaning was required for the data; the fields extracted described the industry (code and name), the SA2 region (code and name), and the total number of businesses in that industry, in that region.</p>
+<p><strong>Stops</strong> describing public transport schedules, stop locations, and routes were sourced from Transport NSW’s Open Data platform. This dataset was originally packaged in a GTFS format; only the subset regarding transport stops was used. Geometry POINT objects were created for each stop from their longitude and latitude. Alongside geometry, the ID and name of each stop were also extracted. Duplicates and missing values were removed from the ID field, to be used as a primary key.</p>
+<p><strong>Polls</strong> describing polling locations in the 2019 Federal Election were sourced from the AURIN Data Catalogue. POINT objects were created to describe the position of each poll, from their longitude and latitude. The name and ID of each poll was also extracted.</p>
+<p>The<b> Schoo</b><strong>ls</strong> dataset was obtained from the NSW Department of Education website and contains information on the catchment areas for NSW government schools. It includes three shapefiles indicating the geographical regions in which students must reside to attend primary, secondary, and future government schools. For our purpose, we concatenated the three and extracted the ID of each school, its type, and its catchment geometry. Duplicates of the ID-type combination were removed for use as a primary key.</p>
+<p>The<b> Population</b> dataset was obtained from the Australian Bureau of Statistics website and contains demographic data on the population distribution across various age groups of each SA2 region within the Greater Sydney area. A new column called "young_people" was created, which aggregates the population count of individuals aged below 19. Two additional fields were extracted: SA2 code, and total population. Duplicate regions were removed, and data was filtered to ensure each SA2 code was mapped to a valid SA2 code in the "regions" dataset.</p>
+<p>The <strong>Income</strong> dataset was sourced from the Australian Bureau of Statistics website and contains income data for each of the SA2 regions in the Greater Sydney area. The SA2 code and the median income for each region were extracted. Missing values and duplicates were removed, and a filter was performed on the SA2 code column to ensure conformity with the "regions" dataset.</p>
+<p><strong>Homelessness</strong> was obtained from the Australian Bureau of Statistics website and contains estimated homeless populations in each SA2 region in the Greater Sydney area. The dataset was provided in Excel format and has two columns of interest: SA2 region names, and the number of homeless persons.</p>
+<p><strong>Health Services</strong> concerning the location of ambulance stations, hospitals, and psychiatric facilities were sourced from the NSW Spatial Data Portal, provided in the Google Maps KML format. The name and position of each facility (described as a POINTZ object) were extracted.</p>
+<p><strong>NSW (New South Wales) Budgets</strong> is a JSON dataset that records information, particularly regarding estimated expenditure, concerning government projects enacted within the NSW region, in the 2015/16 fiscal year, sourced from the NSW Government Data website. The geometry of these projects was described in MULTIPOINT format and was extracted alongside the estimated expenditure of each project, and the name of the responsible government agency.</p>
+<h3 class="wp-block-heading" style="padding-top:0;padding-right:0;padding-bottom:0;padding-left:0">Schema Design  </h3>
+<p>The database schema contains 10 tables: SA2 region information and geometry ("regions"), businesses by industry and region ("businesses"), public transport stops ("stops"), polling booth locations in the 2019 federal election ("polls"), school catchment areas ("schools"), population estimates for each SA2 region ("population"), median income for each SA2 region ("income"), estimates for homeless populations in each region ("homelessness"), health service locations ("emergency"), and government expenditure on each region in the 2015/2016 financial year ("budget"). These tables are linked as per Figure 1 below. </p>
+<p>Where Primary and Foreign Keys were not possible to link tables, geometry was used, according to the relationship between data and regions. For example, as hospitals exist at a POINT in the "emergency" table, ST_Contains was used to join with "regions"; government projects span larger areas, defined as MULTIPOINTS, and therefore ST_Contains and ST_Intersects (joined by an "or" clause) are both used to join "budgets" with "regions".</p>
+<p>Thus, as the "regions" geometry field is used consistently for joining, an index was created for it. The SA2 code in the "regions" table is used to join non-spatial data, such as the "businesses" table, and was also given an index. Additionally, as the "stops" dataset is comparatively large, with over 60,000 valid entries, and is joined to "regions" by its geometry field, a third index was also created for this column.</p>
+<p class="has-text-align-center"><div class="center"><figure class="center"><img height="450" src="https://lh4.googleusercontent.com/6ZmMxUnQ3tuDYkGIMFzltwGIG3IkD6LJlBE0PNE1F9w7rnuhvaCtfpuJY5ZUrJe8jC9cA56-6CVraEA-aYgbCjIIg00AUskPET09nChUYuSYYHLQr0AnXuM3SIBovV6dkANc1DKTez0ofElZQDhiu2M" width="750"/></figure></div></p>
+<figcaption>Fig. 1 – Database Schema</figcaption>
+<h3 class="wp-block-heading">Score Function Construction </h3>
+<p>The "well-resourced" score 𝑠 of a region was calculated as the sum of its 𝑧-scores in each of 8 categories, calculated from the tables described above. A sigmoid function was then applied to this sum to standardize the range of scores: </p>
+<p>$$ s = \sigma(z_{retail}+z_{health}+z_{stops}+z_{polls}+z_{schools}-z_{homelessness}+z_{emergency}+z_{budget}) $$</p>
+<p>\(z_{retail}\) and  \(z_{health}\) were calculated from the number of retail and health businesses in each region, respectively, per 1000 people. Similarly, 𝑧<sub>𝑏𝑢𝑑𝑔𝑒𝑡 </sub>and 𝑧<sub>𝑒𝑚𝑒𝑟𝑔𝑒𝑛𝑐𝑦</sub> and were calculated from the total number of 𝑧<sub>𝑠𝑐ℎ𝑜𝑜𝑙𝑠</sub> health services in an area, and the total amount of government expenditure, per capita. was calculated from the number of school catchments, divided by the number of young people, as this is the most specific population the resource pertains to. Using per-capita metrics aims to mitigate bias toward larger rural regions by controlling for population size. For example, Darlinghurst, which has a comparatively small population (10,776, while many go as high as 25,000), is able to achieve a very high score of 0.992 because it contains 6 hospitals/ambulance stations, and 10 school catchments. Other areas with much greater populations and similar resources, such as Chatswood and Auburn, score lower. This is consistent with the score being a measure of how "well-resourced" a region is, as the same number of resources among fewer people should yield a higher score. This approach does have drawbacks, however. For instance, Banksmeadow scores 1.00 (the maximum), not because it has exceptional resources, but because its population is exceedingly small, at 507. </p>
+<p>Similarly, \(z_{stops}\) and \(z_{polls}\) were calculated from the number of public transport stops and number of polling locations, respectively, divided by the area of the region. This metric was chosen, as opposed to per capita, because these resources are designed to be spatial; public transport stops must adequately cover a region, and polling locations must be significantly close to residents to facilitate voting. This allows smaller regions, which are closer to the CBD and generally have a smaller population, to compete with much larger rural areas. For example, the rural region Dural-Kenthurst-Wiseman’s Ferry has 361 public transport stops, but scores similarly to Surry Hills, which has only 36, because it is nearly 300 times the size.</p>
+<p>\(z_{homelessness}\) was calculated from the estimated number of homeless people per region, divided by the population of the region. However, because a high z-score on this metric would indicate a region is poorly resourced, this z-score was subtracted from the overall sum.</p>
+<p>The summation of all z-scores was seen as an adequate aggregation function because it avoids the inclusion of arbitrary weights to represent the importance of different categories. Rather, the sum represents, unambiguously, the total number of standard deviations above the mean a region possesses across various metrics. Any further abstraction here may risk obfuscating this underlying premise and biassing the results. The sigmoid function was used to standardize the range of values of this sum, and constrains the distribution of scores to be more regular; it does not qualitatively alter the scores. Figure 2 shows the distribution of scores, and supports this notion; the masses at either end of the scale represent the long tails of the unscaled z-score sum.</p>
+<p class="has-text-align-center"><div class="center"><figure class="center"><img src="https://lh5.googleusercontent.com/xYEH3WKzDt18_2hCyVTprwE7KcCq0oxa-XzmPkhgIsdZddJ-jttF8qviPRh4wJC6JVz-UZxG7l_rDAPqniBU4ijuiSRC2pcvaHjHWD45N4uZ0TzvBkyvuOj6TW2sEmWqBzQX1F1DahR-dPjMP2no5Es" style="width: 650px;"/></figure></div></p>
+<figcaption>Fig. 2 – Distribution of Scores Across SA2 Regions</figcaption>
+<h3 class="wp-block-heading" id="result-map">Result</h3>
+<p>Figure 3 is an interactive map visualizing SA2 regions in the Greater Sydney area, summarising their score, and the resources which produced that score. Note that scores for areas in grey could not be calculated due to missing data and that areas with populations fewer than 100 are not represented. </p>
+<div style="width: 100%; text-align: center;"><div class="center"><figure class="center"><iframe frameborder="0" height="600px" src="https://sydney-map.netlify.app/" width="600px"><div class="center"><iframe>
+</iframe></div></iframe></figure></div></div>
+<figcaption style="margin-bottom: 1rem;">Fig. 3 SA2 regions in the Greater Sydney area, summarising their resource score</figcaption>
+
+<p>The inclusion of homelessness data in our analysis serves a different purpose compared to metrics like the number of retail outlets or schools. While these metrics directly represent resources, homelessness reflects the overall resource situation of a region. A higher homeless population indicates a lack of housing, support, and other important factors that contribute to the well-being of an area. By including homelessness data, we can consider this broader context, indirectly including variables that cannot be adequately accounted for within our analysis.</p>
+<p>The hospital and ambulance service data was included as a supplement to the metric \(z_{health}\) calculated from the "Health Service" table. While this score does reflect the medical resources of a region, it also includes non-essential businesses, such as cosmetic clinics and medical technology businesses, which while contributing to the economic resource of an area, do not contribute to its tacit resources. Explicitly including hospitals and emergency services was thought to represent the brick-and-mortar institutions that the residents of an area are most likely to access. However, the limitation of this data is that hospitals and emergency services tend to cluster; Darlinghurst, for example, has both a public hospital, private hospital, and ambulance station, on the same street, while many areas have none at all. While this could be seen as a flaw in the data, it could equally be construed as a feature: areas with clusters of these regions are extremely well-resourced to deal with medical emergencies and should score commensurately.</p>
+<p>The budget expenditure data was included to represent the resources flowing into a region and may give an idea of change in resources. "Schofields-East" for example, scores negatively on every metric, except per capita expenditure, where it is in the 98th percentile, and thus receives a mid-range score overall, 0.47. This is intended to indicate the direction of resources, in that Schofields-East is likely to improve its other z-scores in the future, because of this expenditure. While this could be expected to bias against rural regions, as large public works projects may be funded disproportionately in inner-city regions, where density, and therefore utility, is higher, the data does not support this. Although Miller’s Point (an inner-city area) has the second highest \(z_{budget}\), the other top spots are dominated by areas further from the city: Castle Hill, Epping, Ryde, Kellyville, and Chatswood.</p>
+<h3 class="wp-block-heading">Discussion </h3>
+<p style="margin-top: 2rem; margin-bottom: 1rem;">Correlation analysis was conducted to determine the strength and nature of relationships between the calculated score and the median income for each SA2 region, first broken down into each component:</p>
+<figure class="wp-block-table is-style-regular" style="margin-top: 2rem; margin-bottom: 1rem;"><table><tbody><tr><td class="has-text-align-center" data-align="center">Correlation<br/>between</td><td class="has-text-align-center" data-align="center">Retail</td><td class="has-text-align-center" data-align="center">Health </td><td class="has-text-align-center" data-align="center">Stops</td><td class="has-text-align-center" data-align="center">Polls</td><td class="has-text-align-center" data-align="center">Schools</td><td class="has-text-align-center" data-align="center">Emergency</td><td class="has-text-align-center" data-align="center">Homelessness </td><td class="has-text-align-center" data-align="center">Expenditure</td></tr><tr><td class="has-text-align-center" data-align="center">and</td><td class="has-text-align-center" colspan="8" data-align="center">Median Income</td></tr><tr><td class="has-text-align-center" data-align="center"><strong>Coefficient</strong><strong> r </strong></td><td class="has-text-align-center" data-align="center">0.145</td><td class="has-text-align-center" data-align="center">0.484</td><td class="has-text-align-center" data-align="center">0.090</td><td class="has-text-align-center" data-align="center">0.302</td><td class="has-text-align-center" data-align="center">0.042</td><td class="has-text-align-center" data-align="center">0.197</td><td class="has-text-align-center" data-align="center">-0.177</td><td class="has-text-align-center" data-align="center">0.020</td></tr></tbody></table></figure>
+<figcaption>Table 1 – Correlations Between Score Components and Median Income</figcaption>
+<p class="has-text-align-left" style="margin-top: 2rem; margin-bottom: 1rem;">Table 1 shows a weak-to-moderate positive correlation between income and all metrics, except for homelessness. This is consistent with the intention of the measures; as each metric is supposed to reflect how “well-resourced” an area is, areas associated with higher-income populations should generally score higher. This finding also substantiates the notion that homelessness implies a lack of resources, justifying its inclusion as a negative term in the scoring formula.</p>
+<p style="margin-top: 2rem; margin-bottom: 1rem;">The correlation between the aggregated score and the median income of each area was also investigated, with results presented in Figure 4.</p>
+<p class="has-text-align-center" style="margin-top: 2rem; margin-bottom: 1rem;"><div class="center"><figure class="center"><img src="https://lh3.googleusercontent.com/lvmEvDljHyVEa0KRHzcpa8zcL5MDfu1ROBmG8fxgyJB6bKKNgm98XAVsPfRFB9mQ2vPf4PfxMY3-VueE_oSXS-yjjQe1lrtQTUPe5qKC_ernnWzsGvCK71D0UlH0xZ5bJ9GM4QXSx7NIAXLVjnI5ssY" style="width: 800px;"/></figure></div></p>
+<figcaption>Fig. 4 – Correlations Between Aggregated Score Function and Median Income</figcaption>
+<p style="margin-top: 2rem; margin-bottom: 1rem;">Both when the additional datasets (homelessness, emergency, and budgets) are included, and excluded, a positive correlation is observed between the aggregated score and median income. This positive correlation is consistent with the assumption that well-resourced areas are typically associated with higher-income groups, and provides evidence for the validity of the scoring function.</p>
+<h3 class="wp-block-heading">Summary</h3>
+<p>The report delved into an investigation of resource distribution across SA2 regions within the Greater Sydney area. By utilizing a diverse range of datasets and applying meticulous analytical methodologies, the report has provided insights into the intricate interplay of factors influencing resource allocation across different regions.</p>
+<p>Central to the report's findings is the formulation of a meaningful scoring function, designed to quantify the concept of 'well-resourced.' This function aggregates z-scores across multiple categories, taking into account both spatial and non-spatial elements. The use of per-capita metrics ensures equitable comparisons among regions with varying population sizes, while the application of a sigmoid function standardizes the range of scores for further analysis. The inclusion of homelessness data acknowledges the significance of housing and support services, contributing to a more holistic assessment of overall resource conditions. Similarly, the consideration of healthcare institutions like hospitals and emergency services acknowledges their crucial role in resource availability during medical crises.</p>
+<p>The findings reveal a positive correlation between the aggregated score and median income, offering empirical support for the scoring function's validity. This correlation underscores that areas with higher incomes tend to exhibit more substantial resource allocations, aligning with the core premise of the analysis.</p>
+<p>In summary, this research project provides a comprehensive and nuanced understanding of resource distribution across SA2 regions in the Greater Sydney area. Through the systematic selection, preparation, and analysis of datasets, coupled with an innovative scoring approach, the report sheds light on the intricate dynamics of resource allocation and well-resourcing. By addressing a spectrum of factors, the report contributes to a more comprehensive view of regional well-being and offers a valuable basis for future research and decision-making aimed at promoting equitable resource distribution. </p>
+</body>
+</html>
