@@ -52,8 +52,9 @@ Each metric was standardized using z-scores and then aggregated and scaled using
 - Gabriel Timothy
 
 ## 📂 Project Structure
-greater-sydney-analysis/
-├── Notebook.ipynb # Main analysis and scoring notebook
-├── index.html # Final report (for GitHub Pages)
-├── /data/ # Cleaned and raw datasets
-├── README.md # You're here
+<pre>
+  greater-sydney-analysis/ 
+  ├── Notebook.ipynb # Main analysis and scoring notebook 
+  ├── index.html # Final report (for GitHub Pages) 
+  ├── /data/ # Cleaned and raw datasets (not public) 
+  ├── README.md # You're here </pre>
