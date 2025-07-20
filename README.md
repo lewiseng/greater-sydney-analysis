@@ -26,7 +26,7 @@ Each metric was standardized using z-scores and then aggregated and scaled using
 
 ## 🗺️ Visualizations
 
-- 📌 **[Interactive Map](https://lewischao.com/greater-sydney-analysis/#result-map):** Explore the well-resourced score across SA2 regions.
+- 📌 **[Interactive Map](https://sydney-map.netlify.app/):** Explore the well-resourced score across SA2 regions.
 - 🧮 **[Notebook.ipynb](https://github.com/lewiseng/greater-sydney-analysis/blob/main/Notebook.ipynb):** Full code, analysis, and plots.
 
 ## 🧰 Technologies Used
